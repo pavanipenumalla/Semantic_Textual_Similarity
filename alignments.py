@@ -12,34 +12,10 @@ def get_word_synsets(word):
     return synsets
 
 def calculate_synset_similarity(synset1, synset2):
-    if synset1 == synset2:
-        return 1.0 
-    else:
-        hypernyms1 = synset1.hypernyms()
-        hypernyms2 = synset2.hypernyms()
+    similarity = synset1.path_similarity(synset2)
+    return similarity
 
-        ns1 = set()
-        ns2 = set()
-
-        for hypernym in hypernyms1:
-            ns1.update(hypernym.hyponyms())
-
-        for hypernym in hypernyms2:
-            ns2.update(hypernym.hyponyms())
-
-        # Convert to set of names
-        ns1 = {s.name() for s in ns1}
-        ns2 = {s.name() for s in ns2}
-
-        intersection_size = len(ns1.intersection(ns2))
-        min_size = min(len(ns1), len(ns2))
-        if min_size == 0:
-            return 0.0
-        else:
-            return intersection_size / min_size
-
-
-def align_sentences(sent1, sent2, threshold=0.5):
+def align_sentences(sent1, sent2, threshold=0.3):
     alignments = []
     tokens1 = join_n_grams(sent1, 1)
     tokens1.extend(join_n_grams(sent1, 2))
@@ -51,14 +27,19 @@ def align_sentences(sent1, sent2, threshold=0.5):
     for token1 in tokens1:
         if token1.lower() in nltk.corpus.stopwords.words('english'):
             continue
+        
+        if token1 in ['.', ',', '?', '!', ':', ';']:
+            continue
 
         synsets1 = get_word_synsets(token1)
 
         max_similarity = 0
-        aligned_token = None
 
         for token2 in tokens2:
             if token2.lower() in nltk.corpus.stopwords.words('english'):
+                continue
+
+            if token2 in ['.', ',', '?', '!', ':', ';']:
                 continue
 
             synsets2 = get_word_synsets(token2)
@@ -66,14 +47,12 @@ def align_sentences(sent1, sent2, threshold=0.5):
             for synset1 in synsets1:
                 for synset2 in synsets2:
                     similarity = calculate_synset_similarity(synset1, synset2)
-                    if similarity > max_similarity:
+                    if similarity is not None and similarity > max_similarity:
                         max_similarity = similarity
-                        aligned_token = token2
+            if max_similarity >= threshold:
+                alignments.append((token1, token2, max_similarity))
 
-        if max_similarity >= threshold:
-            alignments.append((token1, aligned_token, max_similarity))
-
-    return alignments
+    return alignments, tokens1, tokens2
 
 def join_n_grams(sentence,n):
     tokens = word_tokenize(sentence)
@@ -84,8 +63,8 @@ def join_n_grams(sentence,n):
         n_grams = ['_'.join(gram) for gram in n_grams]
     return n_grams
 
-sentence1 = "The old guy kicked the bucket at the age of 70."
-sentence2 = "The old guy died at the age of seventy."
+sentence1 = "The tree provided shade in the park."
+sentence2 = "The oak offered shelter in the forest."
 
 sent1 = nlp(sentence1)
 sent2 = nlp(sentence2)
@@ -96,6 +75,20 @@ lemmatized_tokens2 = [token.lemma_ for token in sent2]
 lemmatized_sentence1 = ' '.join(lemmatized_tokens1)
 lemmatized_sentence2 = ' '.join(lemmatized_tokens2)
 
-alignments = align_sentences(lemmatized_sentence1, lemmatized_sentence2)
+alignments, tokens1, tokens2 = align_sentences(lemmatized_sentence1, lemmatized_sentence2)
 
-print(alignments)
+alignments = sorted(alignments, key=lambda x: x[2], reverse=True)
+
+used_tokens1_set = set()
+used_tokens2_set = set()
+
+final_alignments = []
+
+for alignment in alignments:
+    token1, token2, similarity = alignment
+    if token1 not in used_tokens1_set and token2 not in used_tokens2_set:
+        final_alignments.append(alignment)
+        used_tokens1_set.add(token1)
+        used_tokens2_set.add(token2)
+
+print(final_alignments)
