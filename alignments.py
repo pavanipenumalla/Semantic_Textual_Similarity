@@ -3,6 +3,7 @@ import spacy
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+import contractions
  
 lemmatizer = WordNetLemmatizer()
 nlp = spacy.load('en_core_web_sm')
@@ -66,29 +67,43 @@ def join_n_grams(sentence,n):
 sentence1 = "The tree provided shade in the park."
 sentence2 = "The oak offered shelter in the forest."
 
-sent1 = nlp(sentence1)
-sent2 = nlp(sentence2)
+def get_alignments(sentence1, sentence2):
+
+    sentence1 = sentence1.lower()
+    sentence2 = sentence2.lower()
+
+    sentence1 = contractions.fix(sentence1)
+    sentence2 = contractions.fix(sentence2)
+
+    sent1 = nlp(sentence1)
+    sent2 = nlp(sentence2)
  
-lemmatized_tokens1 = [token.lemma_ for token in sent1]
-lemmatized_tokens2 = [token.lemma_ for token in sent2]
+    lemmatized_tokens1 = [token.lemma_ for token in sent1]
+    lemmatized_tokens2 = [token.lemma_ for token in sent2]
  
-lemmatized_sentence1 = ' '.join(lemmatized_tokens1)
-lemmatized_sentence2 = ' '.join(lemmatized_tokens2)
+    lemmatized_sentence1 = ' '.join(lemmatized_tokens1)
+    lemmatized_sentence2 = ' '.join(lemmatized_tokens2)
 
-alignments, tokens1, tokens2 = align_sentences(lemmatized_sentence1, lemmatized_sentence2)
+    alignments, tokens1, tokens2 = align_sentences(lemmatized_sentence1, lemmatized_sentence2)
 
-alignments = sorted(alignments, key=lambda x: x[2], reverse=True)
+    tokens1 = [token for token in tokens1 if token.lower() not in nltk.corpus.stopwords.words('english') and token not in ['.', ',', '?', '!', ':', ';']]
+    tokens2 = [token for token in tokens2 if token.lower() not in nltk.corpus.stopwords.words('english') and token not in ['.', ',', '?', '!', ':', ';']]
 
-used_tokens1_set = set()
-used_tokens2_set = set()
+    alignments = sorted(alignments, key=lambda x: x[2], reverse=True)
 
-final_alignments = []
+    used_tokens1_set = set()
+    used_tokens2_set = set()
 
-for alignment in alignments:
-    token1, token2, similarity = alignment
-    if token1 not in used_tokens1_set and token2 not in used_tokens2_set:
-        final_alignments.append(alignment)
-        used_tokens1_set.add(token1)
-        used_tokens2_set.add(token2)
+    final_alignments = []
 
-print(final_alignments)
+    for alignment in alignments:
+        token1, token2, similarity = alignment
+        if token1 not in used_tokens1_set and token2 not in used_tokens2_set:
+            final_alignments.append(alignment)
+            used_tokens1_set.add(token1)
+            used_tokens2_set.add(token2)
+
+    unigram_counts1 = len([token for token in tokens1 if '_' not in token])
+    unigram_counts2 = len([token for token in tokens2 if '_' not in token])
+
+    return final_alignments, unigram_counts1, unigram_counts2
