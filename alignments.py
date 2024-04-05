@@ -98,10 +98,27 @@ def get_alignments(sentence1, sentence2):
 
     for alignment in alignments:
         token1, token2, similarity = alignment
-        if token1 not in used_tokens1_set and token2 not in used_tokens2_set:
-            final_alignments.append(alignment)
-            used_tokens1_set.add(token1)
-            used_tokens2_set.add(token2)
+        token1_split = token1.split('_')
+        token2_split = token2.split('_')
+        # Check if the tokens are already used
+        if token1 in used_tokens1_set or token2 in used_tokens2_set:
+            continue
+        # check if token_1_split are already used
+        if any([token in used_tokens1_set for token in token1_split]):
+            continue
+        # check if token_2_split are already used
+        if any([token in used_tokens2_set for token in token2_split]):
+            continue
+        # Add the alignment to the final alignments
+        final_alignments.append((token1, token2, similarity))
+        # Add the tokens to the used tokens set
+        used_tokens1_set.add(token1)
+        used_tokens2_set.add(token2)
+        # Add the tokens to the used tokens set
+        for token in token1_split:
+            used_tokens1_set.add(token)
+        for token in token2_split:
+            used_tokens2_set.add(token)
 
     unigram_counts1 = len([token for token in tokens1 if '_' not in token])
     unigram_counts2 = len([token for token in tokens2 if '_' not in token])
