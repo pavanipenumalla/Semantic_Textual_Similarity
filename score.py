@@ -1,8 +1,8 @@
 from alignments import get_alignments
 import nltk
 
-def get_similarity_score(sent1, sent2):
-    alignments,c1,c2 = get_alignments(sent1, sent2)
+def get_similarity_score(sent1, sent2,n):
+    alignments,c1,c2 = get_alignments(sent1, sent2,n)
     alignment_score_sum = 0
     
     for alignment in alignments:

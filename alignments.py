@@ -16,14 +16,16 @@ def calculate_synset_similarity(synset1, synset2):
     similarity = synset1.path_similarity(synset2)
     return similarity
 
-def align_sentences(sent1, sent2, threshold=0.3):
+def align_sentences(sent1, sent2,n, threshold=0.3):
     alignments = []
-    tokens1 = join_n_grams(sent1, 1)
-    tokens1.extend(join_n_grams(sent1, 2))
-    tokens1.extend(join_n_grams(sent1, 3))
-    tokens2 = join_n_grams(sent2, 1)
-    tokens2.extend(join_n_grams(sent2, 2))
-    tokens2.extend(join_n_grams(sent2, 3))
+
+    for i in range(1,n+1):
+        if i == 1:
+            tokens1 = join_n_grams(sent1,i)
+            tokens2 = join_n_grams(sent2,i)
+        else:
+            tokens1.extend(join_n_grams(sent1,i))
+            tokens2.extend(join_n_grams(sent2,i))
 
     for token1 in tokens1:
         if token1.lower() in nltk.corpus.stopwords.words('english'):
@@ -67,7 +69,7 @@ def join_n_grams(sentence,n):
 sentence1 = "The tree provided shade in the park."
 sentence2 = "The oak offered shelter in the forest."
 
-def get_alignments(sentence1, sentence2):
+def get_alignments(sentence1, sentence2,n):
 
     sentence1 = sentence1.lower()
     sentence2 = sentence2.lower()
@@ -84,7 +86,7 @@ def get_alignments(sentence1, sentence2):
     lemmatized_sentence1 = ' '.join(lemmatized_tokens1)
     lemmatized_sentence2 = ' '.join(lemmatized_tokens2)
 
-    alignments, tokens1, tokens2 = align_sentences(lemmatized_sentence1, lemmatized_sentence2)
+    alignments, tokens1, tokens2 = align_sentences(lemmatized_sentence1, lemmatized_sentence2,n)
 
     tokens1 = [token for token in tokens1 if token.lower() not in nltk.corpus.stopwords.words('english') and token not in ['.', ',', '?', '!', ':', ';']]
     tokens2 = [token for token in tokens2 if token.lower() not in nltk.corpus.stopwords.words('english') and token not in ['.', ',', '?', '!', ':', ';']]
@@ -100,7 +102,7 @@ def get_alignments(sentence1, sentence2):
         token1, token2, similarity = alignment
         token1_split = token1.split('_')
         token2_split = token2.split('_')
-        
+
         if token1 in used_tokens1_set or token2 in used_tokens2_set:
             continue
         if any([token in used_tokens1_set for token in token1_split]):
