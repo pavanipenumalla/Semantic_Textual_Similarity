@@ -100,21 +100,18 @@ def get_alignments(sentence1, sentence2):
         token1, token2, similarity = alignment
         token1_split = token1.split('_')
         token2_split = token2.split('_')
-        # Check if the tokens are already used
+        
         if token1 in used_tokens1_set or token2 in used_tokens2_set:
             continue
-        # check if token_1_split are already used
         if any([token in used_tokens1_set for token in token1_split]):
             continue
-        # check if token_2_split are already used
         if any([token in used_tokens2_set for token in token2_split]):
             continue
-        # Add the alignment to the final alignments
         final_alignments.append((token1, token2, similarity))
-        # Add the tokens to the used tokens set
+
         used_tokens1_set.add(token1)
         used_tokens2_set.add(token2)
-        # Add the tokens to the used tokens set
+
         for token in token1_split:
             used_tokens1_set.add(token)
         for token in token2_split:
