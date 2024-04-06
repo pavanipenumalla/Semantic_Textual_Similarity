@@ -14,13 +14,4 @@ def get_similarity_score(sent1, sent2):
         factor = len(t1) + len(t2)
         alignment_score_sum += factor*similarity
     
-    return alignment_score_sum/(c1+c2)
-
-sentence1 =  "The old guy died at the age of seventy."
-sentence2 = "The old guy kicked the bucket at the age of 70."
-
-similarity_score = get_similarity_score(sentence1, sentence2)
-print(similarity_score*5)
-
-    
-    
+    return (alignment_score_sum/(c1+c2))*5
