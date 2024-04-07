@@ -4,6 +4,9 @@ import nltk
 def get_similarity_score(sent1, sent2,n):
     alignments,c1,c2 = get_alignments(sent1, sent2,n)
     alignment_score_sum = 0
+
+    if c1+c2 == 0:
+        return -1
     
     for alignment in alignments:
         t1,t2,similarity = alignment

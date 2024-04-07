@@ -10,7 +10,8 @@ def get_correlation(file):
  
 correlation_values = []
 for n in range(1,6):
-    correlation = get_correlation('results/sick/results_{}.csv'.format(n))
+    # modify file path according to dataset
+    correlation = get_correlation('results/stsbenchmark/results_{}.csv'.format(n))
     correlation_values.append(correlation)
     print('Correlation for n = {}: {}'.format(n, correlation))
 
