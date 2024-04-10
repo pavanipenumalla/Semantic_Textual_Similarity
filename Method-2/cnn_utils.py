@@ -5,6 +5,15 @@ import torch
 import torch.nn as nn
 
 def preprocess(data):
+
+    ## SICK dataset
+
+    # sentence1 = data['sentence_A'].values
+    # sentence2 = data['sentence_B'].values
+    # labels = data['normalised_score'].values
+
+    ## STS Benchmark dataset
+
     sentence1 = data['sentence1'].values
     sentence2 = data['sentence2'].values
     labels = data['similarity'].values
@@ -31,10 +40,12 @@ def preprocess(data):
 
     embeddings_index['PAD'] = np.zeros(300)
 
-    lengths = [len(s) for s in sentence1] + [len(s) for s in sentence2]
-    max_len = np.percentile(lengths, 95)
+    # lengths = [len(s) for s in sentence1] + [len(s) for s in sentence2]
+    # max_len = np.percentile(lengths, 95)
 
-    max_len = int(max_len)
+    # max_len = int(max_len)
+
+    max_len = 30
 
     print("Max length of sentence: ", max_len)
 
@@ -126,6 +137,9 @@ class CNN(nn.Module):
         self.conv = nn.Conv1d(in_channels=1, out_channels=300, kernel_size=337)
         self.relu = nn.ReLU()
 
+    def init_weights(self):
+        nn.init.kaiming_uniform_(self.conv.weight, mode='fan_in', nonlinearity='relu')
+
     def forward(self, x):
         x = x.unsqueeze(1)
         x = self.conv(x)
@@ -160,6 +174,10 @@ class FCNN(nn.Module):
         self.fc1 = nn.Linear(600, 300)
         self.tanh = nn.Tanh()
         self.fc2 = nn.Linear(300, 1)
+
+    def init_weights(self):
+        nn.init.kaiming_uniform_(self.fc1.weight, mode='fan_in', nonlinearity='tanh')
+        nn.init.kaiming_uniform_(self.fc2.weight, mode='fan_in', nonlinearity='linear')
 
     def forward(self, x):
         x = self.fc1(x)
@@ -220,23 +238,41 @@ class Model(nn.Module):
 
         return out
     
-def train_model(model, X1, X2, y, epochs=10, batch_size=32, lr=0.001):
+def train_model(model, train_loader, val_loader,epochs = 5, lr = 0.001):
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    n_batches = len(train_loader)
+    val_batches = len(val_loader)
+
+    loss_train = []
+    loss_val = []
+
 
     for epoch in range(epochs):
-        for i in range(0, len(X1), batch_size):
-            x1 = X1[i:i+batch_size]
-            x2 = X2[i:i+batch_size]
-            target = y[i:i+batch_size]
-
+        model.train()
+        running_loss = 0.0
+        for i,data in enumerate(train_loader):
+            x1, x2, target = data
             optimizer.zero_grad()
-
             output = model(x1, x2)
-            loss = criterion(output, target.view(-1, 1).float())
+            loss = criterion(output, target.view(-1,1).float())
             loss.backward()
             optimizer.step()
+            running_loss += loss.item()
+        
+        loss_train.append(running_loss/n_batches)
+        print("Epoch: {} Train Loss: {}".format(epoch+1, running_loss/n_batches))
 
-        print("Epoch: {} Loss: {:.6f}".format(epoch+1, loss.item()))
+        model.eval()
+        val_running_loss = 0.0
+        with torch.no_grad():
+            for i,data in enumerate(val_loader):
+                x1, x2, target = data
+                output = model(x1, x2)
+                loss = criterion(output, target.view(-1,1).float())
+                val_running_loss += loss.item()
 
-    return model
+        loss_val.append(val_running_loss/val_batches)
+        print("Epoch: {} Validation Loss: {}".format(epoch+1, val_running_loss/val_batches))
+
+    return loss_train, loss_val, model
